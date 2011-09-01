@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/widget/MetrikaWidget.iml" filepath="$PROJECT_DIR$/widget/MetrikaWidget.iml" />
+      <module fileurl="file://$PROJECT_DIR$/metrikaWidget/metrikaWidget.iml" filepath="$PROJECT_DIR$/metrikaWidget/metrikaWidget.iml" />
     </modules>
   </component>
 </project>

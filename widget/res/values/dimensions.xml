@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <dimen name="widget_label_font">11sp</dimen>
-    <dimen name="widget_text_font">24sp</dimen>
-    <dimen name="widget_site_font">9sp</dimen>
-</resources>
