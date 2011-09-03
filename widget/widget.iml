@@ -36,7 +36,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/libs/MetrikaAPI.jar!/" />
+          <root url="jar://$MODULE_DIR$/libs/metrika4j-1.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

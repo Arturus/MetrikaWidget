@@ -28,8 +28,9 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import ru.yandex.metrika.api.entity.Counter;
-import ru.yandex.metrika.api.error.AuthException;
+import ru.metrika4j.entity.Counter;
+import ru.metrika4j.error.AuthException;
+
 
 import java.util.ArrayList;
 import java.util.Arrays;

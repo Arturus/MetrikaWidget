@@ -22,10 +22,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import ru.yandex.metrika.api.ApiFactory;
-import ru.yandex.metrika.api.MetrikaApi;
-import ru.yandex.metrika.api.error.AuthException;
-import ru.yandex.metrika.api.json.light.OrgJsonMapper;
+import ru.metrika4j.ApiFactory;
+import ru.metrika4j.MetrikaApi;
+import ru.metrika4j.error.AuthException;
+import ru.metrika4j.json.org.OrgJsonMapper;
+
 
 /** @author Artur Suilin */
 public class Globals {

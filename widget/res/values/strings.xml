@@ -1,18 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-
-    <string name="app_name">Информер Я.Метрики</string>
+    <string name="app_name">Я.Метрика</string>
     <string name="loading_progress">Загружаются данные...</string>
-
-
 
     <string name="widgetVisits">Визитов</string>
     <string name="widgetRefreshing">Обновляем...</string>
 
-
     <string name="authFirstTime">Перед началом работы вам необходимо авторизоваться на сервере Яндекса и разрешить
-        информеру  Яндекс.Метрики доступ к своим данным. После нажатия на кнопку OK откроется браузер,
+        информеру Яндекс.Метрики доступ к своим данным. После нажатия на кнопку OK откроется браузер,
         следуйте дальнейшим инструкциям.</string>
     <string name="authDialogTitle">Доступ к данным</string>
 

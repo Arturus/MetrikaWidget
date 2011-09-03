@@ -26,12 +26,13 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.RemoteViews;
-import ru.yandex.metrika.api.MetrikaApi;
-import ru.yandex.metrika.api.MetrikaDate;
-import ru.yandex.metrika.api.Report;
-import ru.yandex.metrika.api.Reports;
-import ru.yandex.metrika.api.error.NoDataException;
-import ru.yandex.metrika.api.error.TransportException;
+import ru.metrika4j.MetrikaApi;
+import ru.metrika4j.MetrikaDate;
+import ru.metrika4j.Report;
+import ru.metrika4j.Reports;
+import ru.metrika4j.error.NoDataException;
+import ru.metrika4j.error.TransportException;
+
 
 import java.util.HashSet;
 import java.util.Set;
@@ -115,7 +116,7 @@ public class UpdateService extends Service {
                 } else {
                     MetrikaApi api = Globals.getApi(context);
                     // Собственно запрос к Metrika API
-                    Report report = api.makeReportBuider(Reports.trafficSummary, counterId)
+                    Report report = api.makeReportBuilder(Reports.trafficSummary, counterId)
                             .withDateFrom(new MetrikaDate())
                             .withDateTo(new MetrikaDate())
                             .build();
