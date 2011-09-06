@@ -59,7 +59,7 @@ public class UpdateService extends Service {
         // значит надо обновить оффлайновые виджеты.
         int[] ids = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS);
         if (ids == null) { // Приехал пустой Intent, ничего не делаем
-            Log.e(TAG, "No ids in onStart()");
+            Log.e(TAG, "No ids in onStartCommand()");
         } else {
             if (ids.length == 0) { // обновляем оффлайновые виджеты
                 Log.d(TAG, "Got updateOffline request");
@@ -68,8 +68,6 @@ public class UpdateService extends Service {
                 for (Integer offlineWidget : offlineWidgets) {
                     ids[count++] = offlineWidget;
                 }
-                // Очищаем offlineWidgets. Если виджеты все еще в offline, они добавятся сюда обратно по ходу обновления
-                offlineWidgets = new HashSet<Integer>();
             }
             // Обновляем каждый виджет в своей асинхронной задаче
             for (int id : ids) {
@@ -102,7 +100,7 @@ public class UpdateService extends Service {
             // Рисуем состояние "обновляюсь"
             views.setTextViewText(R.id.widget_label, context.getResources().getText(R.string.widgetRefreshing));
             views.setImageViewResource(R.id.widget_picture, R.drawable.dia_inv);
-            // Перерисовываем виджет
+            // Немедленно обновляем виджет
             manager.updateAppWidget(widgetId, views);
         }
 
@@ -134,20 +132,23 @@ public class UpdateService extends Service {
 
         @Override
         protected void onPostExecute(Result visits) {
-            // maintain offlineWidgets
             if (visits.isOffline()) {
                 offlineWidgets.add(widgetId);
             } else {
                 offlineWidgets.remove(widgetId);
             }
             // Задаем содержимое надписей и картинок в виджете
-            views.setTextViewText(R.id.widget_text, visits.toString());
+            String text = visits.toString();
+            views.setTextViewText(R.id.widget_text, text);
+            if (text.length() > 5) {
+                // Небольшой хак: уменьшаем размер текста, чтобы влезла шестизначная цифра. Исходный размер - 24
+                views.setFloat(R.id.widget_text, "setTextSize", 20);
+            }
             views.setTextViewText(R.id.widget_label, context.getResources().getText(R.string.widgetVisits));
             views.setImageViewResource(R.id.widget_picture,
                     visits.isOffline() ? R.drawable.dia_offline : R.drawable.dia);
             views.setTextViewText(R.id.widget_site_name, prefs.getString(MetrikaWidgetProvider.SITE_NAME_KEY + widgetId,
                     "site"));
-
             // Делаем обработчик onClick()
             Intent clickIntent = new Intent(context, MetrikaWidgetProvider.class);
             clickIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
@@ -155,7 +156,7 @@ public class UpdateService extends Service {
             //Смысл этой магии c Uri в том, чтобы Андроид считал Intent-ы для разных widgetId реально разными,
             // а не копиями одного и того же. Extras не принимают участия в Intent.filterEquals, поэтому дополнительно
             // выставляем data
-            clickIntent.setData(Uri.fromParts("ymet", "widget", Integer.toString(widgetId)));
+            clickIntent.setData(Uri.fromParts("metwd", "widget", Integer.toString(widgetId)));
 
             // Вешаем обработчик клика на все составляющие widget-а
             PendingIntent actionPendingIntent = PendingIntent.getBroadcast(context, 0, clickIntent, 0);

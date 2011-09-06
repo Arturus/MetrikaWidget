@@ -94,48 +94,48 @@ public class WidgetSetupActivity extends ListActivity {
         }
     }
 
-    /** Асинхронная загрузка списка счетчиков */
-    private class CountersLoadTask extends AsyncTask<Void, Void, Counter[]> {
-        private Exception error;
-        private boolean needAuth = false;
-        private ProgressDialog progressDialog;
+/** Асинхронная загрузка списка счетчиков */
+private class CountersLoadTask extends AsyncTask<Void, Void, Counter[]> {
+    private Exception error;
+    private boolean needAuth = false;
+    private ProgressDialog progressDialog;
 
-        @Override
-        protected void onPreExecute() {
-            progressDialog = ProgressDialog.show(WidgetSetupActivity.this, null,
-                    getResources().getString(R.string.loading_progress), true);
-        }
+    @Override
+    protected void onPreExecute() {
+        progressDialog = ProgressDialog.show(WidgetSetupActivity.this, null,
+                getResources().getString(R.string.loading_progress), true);
+    }
 
-        @Override
-        protected void onPostExecute(Counter[] counters) {
-            progressDialog.dismiss();
-            if (needAuth) {
-                Globals.requestAuth(WidgetSetupActivity.this);
-            } else if (error != null) {
-                new AlertDialog.Builder(WidgetSetupActivity.this).setTitle(R.string.errorTitle)
-                        .setIcon(R.drawable.emo_im_wtf)
-                        .setMessage(error.getMessage())
-                        .setPositiveButton(R.string.OK, null)
-                        .show();
-            } else {
-                WidgetSetupActivity.this.counters.addAll(Arrays.asList(counters));
-                listAdapter.notifyDataSetChanged();
-            }
-        }
-
-        @Override
-        protected Counter[] doInBackground(Void... voids) {
-            try {
-                return Globals.getApi(WidgetSetupActivity.this).getCounters();
-            } catch (AuthException e) {
-                needAuth = true;
-            } catch (Exception e) {
-                error = e;
-            }
-            // Если словили Exception, возвращаем пустой список
-            return new Counter[0];
+    @Override
+    protected void onPostExecute(Counter[] counters) {
+        progressDialog.dismiss();
+        if (needAuth) {
+            Globals.requestAuth(WidgetSetupActivity.this);
+        } else if (error != null) {
+            new AlertDialog.Builder(WidgetSetupActivity.this).setTitle(R.string.errorTitle)
+                    .setIcon(R.drawable.emo_im_wtf)
+                    .setMessage(error.getMessage())
+                    .setPositiveButton(R.string.OK, null)
+                    .show();
+        } else {
+            WidgetSetupActivity.this.counters.addAll(Arrays.asList(counters));
+            listAdapter.notifyDataSetChanged();
         }
     }
+
+    @Override
+    protected Counter[] doInBackground(Void... voids) {
+        try {
+            return Globals.getApi(WidgetSetupActivity.this).getCounters();
+        } catch (AuthException e) {
+            needAuth = true;
+        } catch (Exception e) {
+            error = e;
+        }
+        // Если словили Exception, возвращаем пустой список
+        return new Counter[0];
+    }
+}
 
     /** Адаптер для отображения Counter в элементе списка счетчиков */
     private class CounterListAdapter extends ArrayAdapter<Counter> {

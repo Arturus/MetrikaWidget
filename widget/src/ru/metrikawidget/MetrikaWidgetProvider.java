@@ -51,7 +51,7 @@ public class MetrikaWidgetProvider extends AppWidgetProvider {
     }
 
     public static void update(Context context, int[] appWidgetIds) {
-        // Чтобы не словить ANR, все обновления выполняются через отдельный сервис
+        // Чтобы не словить ANR, и не стартовать долгоживущие потоки из обработчика broadcast-а, все обновления выполняются через отдельный сервис
         Intent intent = new Intent(context, UpdateService.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         context.startService(intent);

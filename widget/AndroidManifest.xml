@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <application android:icon="@drawable/metrika_logo" android:label="@string/app_name" android:debuggable="true">
+    <application android:icon="@drawable/metrika_logo" android:label="@string/app_name" android:debuggable="false" >
         <activity android:name="ru.metrikawidget.MainActivity" android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -20,7 +20,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="ymet" android:host="oauthtoken"/>
+                <data android:scheme="metwd" android:host="oauthtoken"/>
             </intent-filter>
         </activity>
         <activity android:name="ru.metrikawidget.WidgetSetupActivity" android:launchMode="singleTop">
@@ -28,15 +28,15 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
-        <receiver android:name="ru.metrikawidget.MetrikaWidgetProvider">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.net.conn.BACKGROUND_DATA_SETTING_CHANGED"/>
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
-            </intent-filter>
-            <meta-data android:name="android.appwidget.provider"
-               android:resource="@xml/widget_info" />
-    </receiver>
+<receiver android:name="ru.metrikawidget.MetrikaWidgetProvider">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="android.net.conn.BACKGROUND_DATA_SETTING_CHANGED"/>
+        <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+    </intent-filter>
+    <meta-data android:name="android.appwidget.provider"
+       android:resource="@xml/widget_info" />
+</receiver>
     <service android:name="ru.metrikawidget.UpdateService" />
 
     </application>
