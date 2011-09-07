@@ -14,3 +14,5 @@
 Готовый виджет, подписанный debug ключом, можно загрузить отсюда: https://github.com/downloads/Arturus/MetrikaWidget/MetrikaWidget-debug.apk
 или через страницу с QR кодом: https://github.com/Arturus/MetrikaWidget/MetrikaWidget-debug.apk/qr_code
 
+Release версия доступна в [https://market.android.com/details?id=ru.metrikawidget](Android Market)
+
