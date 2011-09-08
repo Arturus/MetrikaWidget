@@ -21,6 +21,8 @@
     <string name="authCompleteTile">Авторизация подтверждена</string>
     <string name="authCompleteText">Вы успешно авторизовались и предоставили доступ к вашим данным в Яндекс.Метрике.
         Сейчас вы можете установить виджет на экран.</string>
+    <string name="authNonCompleteTile">Авторизация не подтверждена</string>
+        <string name="authNonCompleteText">Для работы с виджетом вам необходимо разрешить приложению доступ к своим данным в Яндекс.Метрике.</string>
 
     <string name="OK">OK</string>
     <string name="errorTitle">Ошибка</string>

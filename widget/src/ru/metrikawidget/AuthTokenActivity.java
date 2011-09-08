@@ -32,21 +32,34 @@ public class AuthTokenActivity extends Activity {
 
     private String extractParam(String param) {
         String fragment = getIntent().getData().getFragment();
-        String[] parts = fragment.split("\\&");
-        for (String part : parts) {
-            if (part.startsWith(param)) {
-                return part.substring(param.length(), part.length());
+        if (fragment != null) {
+            String[] parts = fragment.split("\\&");
+            for (String part : parts) {
+                if (part.startsWith(param)) {
+                    return part.substring(param.length(), part.length());
+                }
             }
         }
-        // Не совсем очевидно, что здесь надо делать. Лучшие идеи?
-        throw new IllegalArgumentException("Can't extract " + param + " from query string");
+        return null;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String token = extractParam("access_token=");
-
+        if (token == null) {
+        // Не совсем очевидно, что здесь надо делать. Лучшие идеи?
+            new AlertDialog.Builder(this).setTitle(R.string.authNonCompleteTile)
+                .setMessage(R.string.authNonCompleteText)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                })
+                .show();
+            return;
+        }
         // Запоминаем полученный токен в preferences
         SharedPreferences prefs = getSharedPreferences(Globals.PREF_FILE, 0);
         prefs.edit().putString(Globals.PREF_TOKEN, token).commit();
