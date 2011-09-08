@@ -141,8 +141,11 @@ public class UpdateService extends Service {
             String text = visits.toString();
             views.setTextViewText(R.id.widget_text, text);
             if (text.length() > 5) {
-                // Небольшой хак: уменьшаем размер текста, чтобы влезла шестизначная цифра. Исходный размер - 24
+                // Небольшой хак: уменьшаем размер текста, чтобы влезла шестизначная цифра.
                 views.setFloat(R.id.widget_text, "setTextSize", 20);
+            } else {
+                // Исходный размер - 24
+                views.setFloat(R.id.widget_text, "setTextSize", 24);
             }
             views.setTextViewText(R.id.widget_label, context.getResources().getText(R.string.widgetVisits));
             views.setImageViewResource(R.id.widget_picture,
