@@ -18,22 +18,23 @@ package ru.metrikawidget;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.*;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.RemoteViews;
-import ru.metrika4j.MetrikaApi;
-import ru.metrika4j.MetrikaDate;
-import ru.metrika4j.Report;
-import ru.metrika4j.Reports;
+import ru.metrika4j.*;
+import ru.metrika4j.error.AuthException;
 import ru.metrika4j.error.NoDataException;
 import ru.metrika4j.error.TransportException;
 
 
+import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -46,6 +47,10 @@ public class UpdateService extends Service {
     // Идентификаторы виджетов, которые не смогли обновиться в силу отсутствия Интернетов
     private Set<Integer> offlineWidgets = new HashSet<Integer>();
     private static final String TAG = "UpdateService";
+
+    private final static int[] colors = new int[] {Color.rgb(189, 115, 226), Color.rgb(134, 147, 239),
+            Color.rgb(47, 173, 236), Color.rgb(11, 186, 219), Color.rgb(10, 193, 151), Color.rgb(9, 189, 70),
+            Color.rgb(99, 199, 10), Color.rgb(186, 211, 11), Color.rgb(242, 206, 12), Color.rgb(242, 190, 12)};
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -90,6 +95,8 @@ public class UpdateService extends Service {
             this.widgetId = widgetId;
             this.context = context;
             manager = AppWidgetManager.getInstance(context);
+            int[] installedids = manager.getAppWidgetIds(new ComponentName(context, MetrikaWidgetProvider.class));
+            Log.d(TAG, "ids: " + installedids);
             views = new RemoteViews(context.getPackageName(), R.layout.widget);
             prefs = context.getSharedPreferences(Globals.PREF_FILE, 0);
         }
@@ -115,15 +122,18 @@ public class UpdateService extends Service {
                     MetrikaApi api = Globals.getApi(context);
                     // Собственно запрос к Metrika API
                     Report report = api.makeReportBuilder(Reports.trafficSummary, counterId)
-                            .withDateFrom(new MetrikaDate())
+                            .withDateFrom(new MetrikaDate().plusDays(-9))
                             .withDateTo(new MetrikaDate())
                             .build();
-                    return new Result(report.getTotals().getInt("visits"));
+                    return new Result(report,"visits");
+                    //return new Result(report.getTotals().getInt("visits"));}
                 }
             } catch (NoDataException e) {
                 return Result.EMPTY;
             } catch (TransportException e) {
                 return Result.OFFLINE;
+            } catch (AuthException e) {
+                Globals.resetAPI();
             } catch (Throwable e) {
                 Log.e(TAG, "Error getting data: " + e.getMessage(), e);
             }
@@ -148,8 +158,35 @@ public class UpdateService extends Service {
                 views.setFloat(R.id.widget_text, "setTextSize", 24);
             }
             views.setTextViewText(R.id.widget_label, context.getResources().getText(R.string.widgetVisits));
-            views.setImageViewResource(R.id.widget_picture,
-                    visits.isOffline() ? R.drawable.dia_offline : R.drawable.dia);
+            //views.setImageViewResource(R.id.widget_picture,
+            //        visits.isOffline() ? R.drawable.dia_offline : R.drawable.dia);
+            if (visits.isOffline) {
+                views.setImageViewResource(R.id.widget_picture, R.drawable.dia_offline);
+            } else {
+                if (visits.values == null) {
+                    views.setImageViewResource(R.id.widget_picture, R.drawable.dia);
+                } else {
+                    // Узнаем высоту и ширину диаграммы (загружаем дефолтную диаграмму и смотрим на нее)
+                    Bitmap templateBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.dia);
+                    int bitmapWidth = templateBitmap.getWidth();
+                    int bitmapHeight = templateBitmap.getHeight();
+                    templateBitmap.recycle();
+                    Bitmap diaBitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+                    Canvas dia = new Canvas(diaBitmap);
+                    Paint p = new Paint();
+                    p.setAntiAlias(false);
+                    int pixelWidth = bitmapWidth / visits.values.length;
+                    float heightFactor = bitmapHeight / (float) visits.maxValue;
+                    for (int i = 0; i < visits.values.length; i++) {
+                        int v = visits.values[i];
+                        p.setColor(colors[i]);
+                        dia.drawRect(new Rect(i * pixelWidth, bitmapHeight - Math.round(v * heightFactor), (i + 1) * pixelWidth, bitmapHeight), p);
+                    }
+                    views.setImageViewBitmap(R.id.widget_picture, diaBitmap);
+                }
+            }
+
+
             views.setTextViewText(R.id.widget_site_name, prefs.getString(MetrikaWidgetProvider.SITE_NAME_KEY + widgetId,
                     "site"));
             // Делаем обработчик onClick()
@@ -177,20 +214,46 @@ public class UpdateService extends Service {
      * Результат запроса значения через MetrikaApi. Кроме штатного состояния "результат известен", есть еще два:
      * "сделали запрос, но результат неизвестен" (value == null) и "находимся в оффлайне" (isOffline==true)
      */
-    static class Result {
-        private Integer value;
+    final static class Result {
+        private Integer currentValue;
         private boolean isOffline;
+        private int[] values;
+        private int maxValue;
 
         static Result UNKNOWN = new Result(null);
         static Result OFFLINE = new Result(true);
         static Result EMPTY = new Result(0);
 
+
         private Result(boolean offline) {
             isOffline = offline;
         }
 
-        private Result(Integer value) {
-            this.value = value;
+        private Result(Integer currentValue) {
+            this.currentValue = currentValue;
+        }
+
+
+        Result(Report report, String field) {
+            ReportItem[] items = report.getData();
+            MetrikaDate from = report.getDateFrom();
+            MetrikaDate to = report.getDateTo();
+            int numberOfDays = (int)from.diffDayPeriods(to);
+            values = new int[numberOfDays + 1];
+            long startDate = from.getUnixDay();
+
+            for (ReportItem item : items) {
+                MetrikaDate rowDate = new MetrikaDate(item.getString("date"));
+                int index = (int)(rowDate.getUnixDay() - startDate);
+                values[index] = item.getInt(field);
+            }
+            for (int value : values) {
+                if (value > maxValue) {
+                    maxValue = value;
+                }
+            }
+            currentValue = values[values.length - 1];
+
         }
 
         public boolean isOffline() {
@@ -198,7 +261,7 @@ public class UpdateService extends Service {
         }
 
         public String toString() {
-            return value == null ? "?" : value.toString();
+            return currentValue == null ? "?" : currentValue.toString();
         }
     }
 

@@ -91,4 +91,7 @@ public class Globals {
     }
 
 
+    public static void resetAPI() {
+        api = null;
+    }
 }

@@ -34,12 +34,14 @@
     <orderEntry type="jdk" jdkName="Android 2.1-update1 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">
-      <library>
+      <library name="libs">
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/libs/metrika4j-1.0.jar!/" />
+          <root url="file://$MODULE_DIR$/libs" />
+          <root url="file://$MODULE_DIR$/libs" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
+        <jarDirectory url="file://$MODULE_DIR$/libs" recursive="false" />
       </library>
     </orderEntry>
   </component>
