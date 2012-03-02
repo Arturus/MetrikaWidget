@@ -238,7 +238,7 @@ public class UpdateService extends Service {
             ReportItem[] items = report.getData();
             MetrikaDate from = report.getDateFrom();
             MetrikaDate to = report.getDateTo();
-            int numberOfDays = (int)from.diffDayPeriods(to);
+            int numberOfDays = from.diffDayPeriods(to);
             values = new int[numberOfDays + 1];
             long startDate = from.getUnixDay();
 
