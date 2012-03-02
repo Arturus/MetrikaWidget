@@ -6,8 +6,8 @@
 Сборка виджета:
 
 1. Перейти в каталог widget
-2. Запустить команду `android update project --path .` (подразумевается, что путь к каталогу [Android SDK]/tools есть в PATH)
-2. Запустить `ant debug` или `ant release`
+2. Запустить команду `android update project --name MetrikaWidget --path .` (подразумевается, что путь к каталогу [Android SDK]/tools есть в PATH)
+3. Запустить `ant debug` или `ant release`
 
 Проект также включает Android-модуль для Intellij IDEA 10 (widget.iml)
 
