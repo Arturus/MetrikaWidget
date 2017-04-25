@@ -28,13 +28,14 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import ru.metrika4j.entity.Counter;
-import ru.metrika4j.error.AuthException;
-
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+
+import retrofit2.Response;
+import ru.metrikawidget.api.Counter;
+import ru.metrikawidget.api.CounterListResponse;
 
 /**
  * Вызывается при настройке виджета. Загружает и отображает список счетчиков.
@@ -42,7 +43,7 @@ import java.util.List;
  * @author Artur Suilin
  */
 public class WidgetSetupActivity extends ListActivity {
-    private List<Counter> counters = new ArrayList<Counter>();
+    private List<Counter> counters = new ArrayList<>();
     private CounterListAdapter listAdapter;
 
 
@@ -95,7 +96,7 @@ public class WidgetSetupActivity extends ListActivity {
     }
 
 /** Асинхронная загрузка списка счетчиков */
-private class CountersLoadTask extends AsyncTask<Void, Void, Counter[]> {
+private class CountersLoadTask extends AsyncTask<Void, Void, List<Counter>> {
     private Exception error;
     private boolean needAuth = false;
     private ProgressDialog progressDialog;
@@ -107,7 +108,7 @@ private class CountersLoadTask extends AsyncTask<Void, Void, Counter[]> {
     }
 
     @Override
-    protected void onPostExecute(Counter[] counters) {
+    protected void onPostExecute(List<Counter> counters) {
         progressDialog.dismiss();
         if (needAuth) {
             Globals.requestAuth(WidgetSetupActivity.this);
@@ -118,22 +119,28 @@ private class CountersLoadTask extends AsyncTask<Void, Void, Counter[]> {
                     .setPositiveButton(R.string.OK, null)
                     .show();
         } else {
-            WidgetSetupActivity.this.counters.addAll(Arrays.asList(counters));
+            WidgetSetupActivity.this.counters.addAll(counters);
             listAdapter.notifyDataSetChanged();
         }
     }
 
     @Override
-    protected Counter[] doInBackground(Void... voids) {
+    protected List<Counter> doInBackground(Void... voids) {
         try {
-            return Globals.getApi(WidgetSetupActivity.this).getCounters();
-        } catch (AuthException e) {
-            needAuth = true;
+            Response<CounterListResponse> response = Globals.getApi(WidgetSetupActivity.this).getCounters().execute();
+
+            if (response.isSuccessful()) {
+                return response.body().getCounters();
+
+            } else if (response.code() == 401 || response.code() == 403) {
+                needAuth = true;
+            }
+
         } catch (Exception e) {
             error = e;
         }
         // Если словили Exception, возвращаем пустой список
-        return new Counter[0];
+        return Collections.emptyList();
     }
 }
 

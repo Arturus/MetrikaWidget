@@ -22,21 +22,30 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.*;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.RemoteViews;
-import ru.metrika4j.*;
-import ru.metrika4j.error.AuthException;
-import ru.metrika4j.error.NoDataException;
-import ru.metrika4j.error.TransportException;
 
-
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
+
+import retrofit2.Response;
+import ru.metrikawidget.api.ByTimeData;
+import ru.metrikawidget.api.ByTimeResponse;
 
 /**
  * Сервис, занимающийся обновлением виджетов. Каждый виджет обновляется асинхронно в своей задаче {@link UpdateTask}
@@ -45,7 +54,7 @@ import java.util.Set;
  */
 public class UpdateService extends Service {
     // Идентификаторы виджетов, которые не смогли обновиться в силу отсутствия Интернетов
-    private Set<Integer> offlineWidgets = new HashSet<Integer>();
+    private Set<Integer> offlineWidgets = new HashSet<>();
     private static final String TAG = "UpdateService";
 
     private final static int[] colors = new int[] {Color.rgb(189, 115, 226), Color.rgb(134, 147, 239),
@@ -120,23 +129,39 @@ public class UpdateService extends Service {
                     Log.w(TAG, "No counterId for widget " + widgetId);
                 } else {
                     MetrikaApi api = Globals.getApi(context);
-                    // Собственно запрос к Metrika API
-                    Report report = api.makeReportBuilder(Reports.trafficSummary, counterId)
-                            .withDateFrom(new MetrikaDate().plusDays(-9))
-                            .withDateTo(new MetrikaDate())
-                            .build();
-                    return new Result(report,"visits");
-                    //return new Result(report.getTotals().getInt("visits"));}
+                    Calendar to = Calendar.getInstance();
+                    Calendar from = Calendar.getInstance();
+                    from.add(Calendar.DAY_OF_YEAR, -9);
+
+                    Response<ByTimeResponse> byTimeResponseResponse = api.byTime(Collections.singletonList(counterId),
+                            "ym:s:visits",
+                            null,
+                            formatDate(from.getTime()),
+                            formatDate(to.getTime()),
+                            "day")
+                            .execute();
+
+                    if (byTimeResponseResponse.isSuccessful()) {
+                        return new Result(byTimeResponseResponse.body());
+
+                    } else {
+                        int code = byTimeResponseResponse.code();
+                        if (code == 401 || code == 403) {
+                            Globals.resetAPI();
+                        }
+                        Log.w(TAG, "code = " + code);
+                    }
+
                 }
-            } catch (NoDataException e) {
-                return Result.EMPTY;
-            } catch (TransportException e) {
+
+            } catch (IOException e) {
+                e.printStackTrace();
                 return Result.OFFLINE;
-            } catch (AuthException e) {
-                Globals.resetAPI();
-            } catch (Throwable e) {
-                Log.e(TAG, "Error getting data: " + e.getMessage(), e);
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+
             return Result.UNKNOWN;
         }
 
@@ -208,6 +233,11 @@ public class UpdateService extends Service {
             manager.updateAppWidget(widgetId, views);
             Log.d(TAG, "Done update for " + widgetId);
         }
+
+        private String formatDate(Date date) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            return sdf.format(date);
+        }
     }
 
     /**
@@ -215,45 +245,43 @@ public class UpdateService extends Service {
      * "сделали запрос, но результат неизвестен" (value == null) и "находимся в оффлайне" (isOffline==true)
      */
     final static class Result {
-        private Integer currentValue;
+        private int currentValue = -1;
         private boolean isOffline;
         private int[] values;
         private int maxValue;
 
-        static Result UNKNOWN = new Result(null);
+        static Result UNKNOWN = new Result(-1);
         static Result OFFLINE = new Result(true);
-        static Result EMPTY = new Result(0);
-
 
         private Result(boolean offline) {
             isOffline = offline;
         }
 
-        private Result(Integer currentValue) {
+        private Result(int currentValue) {
             this.currentValue = currentValue;
         }
 
+        Result(ByTimeResponse byTimeResponse) {
+            if (byTimeResponse.getTotalRows() == 0) {
+                currentValue = 0;
 
-        Result(Report report, String field) {
-            ReportItem[] items = report.getData();
-            MetrikaDate from = report.getDateFrom();
-            MetrikaDate to = report.getDateTo();
-            int numberOfDays = from.diffDayPeriods(to);
-            values = new int[numberOfDays + 1];
-            long startDate = from.getUnixDay();
-
-            for (ReportItem item : items) {
-                MetrikaDate rowDate = new MetrikaDate(item.getString("date"));
-                int index = (int)(rowDate.getUnixDay() - startDate);
-                values[index] = item.getInt(field);
-            }
-            for (int value : values) {
-                if (value > maxValue) {
-                    maxValue = value;
+            } else {
+                ByTimeData byTimeData = byTimeResponse.getData().get(0);
+                int count = byTimeResponse.getTotalRows().intValue();
+                values = new int[count];
+                for (int i = 0; i < count; i++) {
+                    Double value = byTimeData.getMetrics().get(0).get(i);
+                    values[i] = value != null ? value.intValue() : 0;
                 }
-            }
-            currentValue = values[values.length - 1];
 
+                for (int value : values) {
+                    if (value > maxValue) {
+                        maxValue = value;
+                    }
+                }
+
+                currentValue = values[values.length - 1];
+            }
         }
 
         public boolean isOffline() {
@@ -261,9 +289,8 @@ public class UpdateService extends Service {
         }
 
         public String toString() {
-            return currentValue == null ? "?" : currentValue.toString();
+            return currentValue == -1 ? "?" : String.valueOf(currentValue);
         }
     }
-
 
 }
