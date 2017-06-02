@@ -22,11 +22,16 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import ru.metrika4j.ApiFactory;
-import ru.metrika4j.MetrikaApi;
-import ru.metrika4j.error.AuthException;
-import ru.metrika4j.json.org.OrgJsonMapper;
 
+import java.io.IOException;
+
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 /** @author Artur Suilin */
 public class Globals {
@@ -36,15 +41,41 @@ public class Globals {
 
     /**
      * Возвращает глобальный instance MetrikaApi, при необходимости создавая его. Eсли instance не существует и его невозможно создать
-     * (нет сохранённого в настройках OAuth токена), бросает {@link AuthException}
+     * (нет сохранённого в настройках OAuth токена), бросает {@link RuntimeException}
      */
     public static synchronized MetrikaApi getApi(Context context) {
         if (api == null) {
-            String token = getOAuthToken(context);
+            final String token = getOAuthToken(context);
             if (token == null) {
-                throw new AuthException();
+                throw new RuntimeException();
             } else {
-                api = ApiFactory.createMetrikaAPI(token, new OrgJsonMapper());
+                OkHttpClient.Builder builder = new OkHttpClient.Builder();
+
+                HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor();
+                httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+                builder.addNetworkInterceptor(httpLoggingInterceptor);
+
+                builder.addInterceptor(new Interceptor() {
+                    @Override
+                    public Response intercept(Chain chain) throws IOException {
+                        Request request = chain.request();
+                        if (request != null) {
+                            return chain.proceed(request.newBuilder()
+                                    .header("Authorization", String.format("OAuth %s", token))
+                                    .build());
+                        }
+                        return null;
+                    }
+                });
+
+                OkHttpClient okHttpClient = builder.build();
+
+
+                api = new Retrofit.Builder().baseUrl(MetrikaApi.BASE_URL)
+                        .client(okHttpClient)
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build()
+                        .create(MetrikaApi.class);
             }
         }
         return api;
